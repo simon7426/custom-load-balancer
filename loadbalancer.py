@@ -45,7 +45,9 @@ def router(path='/'):
             healthy_server = get_healthy_server(entry['path'],register)
             if not healthy_server:
                 return 'No backend servers available.',503
+            healthy_server.open_connections+=1
             resp = requests.get(f'http://{healthy_server.endpoint}')
+            healthy_server.open_connections-=1
             return resp.content,resp.status_code
     # if host_header == 'www.mango.com':
     #     resp = requests.get(f'http://{random.choice(MANGO_BACKENDS)}')
