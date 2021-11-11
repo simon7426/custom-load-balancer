@@ -6,6 +6,7 @@ import yaml
 from utils import (
     get_healthy_server, 
     healthcheck,
+    process_firewall_rules_flag,
     process_rewrite_rules,
     process_rules, 
     transform_backends_from_config,
@@ -27,6 +28,10 @@ def router(path='/'):
     # print(updated_register)
     host_header = request.headers['Host']
     # print(host_header)
+
+    if not process_firewall_rules_flag(config,host_header,request.environ['REMOTE_ADDR'],f'/{path}'):
+        return 'Forbidden',403
+
     for entry in config['hosts']:
         if host_header == entry['host']:
             healthy_server = get_healthy_server(entry['host'],updated_register)
