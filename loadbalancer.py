@@ -1,13 +1,13 @@
 from flask import Flask,request
 import requests
 import random
-from werkzeug.wrappers import response
 import yaml
 
 from utils import (
     get_healthy_server, 
     healthcheck,
-    process_header_rules, 
+    process_rewrite_rules,
+    process_rules, 
     transform_backends_from_config,
     load_configuration
 )
@@ -32,8 +32,12 @@ def router(path='/'):
             healthy_server = get_healthy_server(entry['host'],updated_register)
             if not healthy_server:
                 return 'No backend servers available.', 503
-            headers = process_header_rules(config,host_header, {k:v for k,v in request.headers.items()})
-            resp = requests.get(f'http://{healthy_server.endpoint}', headers=headers)
+            headers = process_rules(config,host_header, {k:v for k,v in request.headers.items()},'header')
+            params = process_rules(config,host_header,{k:v for k,v in request.args.items()},'param')
+            rewrite_path = ''
+            if path=='v1':
+                rewrite_path = process_rewrite_rules(config,host_header,path)
+            resp = requests.get(f'http://{healthy_server.endpoint}/{rewrite_path}', headers=headers,params=params)
             return resp.content, resp.status_code
     
     for entry in config['paths']:
